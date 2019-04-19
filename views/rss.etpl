@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" version="2.0">
+    <channel>
+        <language>zh-cn</language>
+        <title>${title}</title>
+        <itunes:image href="https://ecma.bdimg.com/adtest/1ffd678ea53cd5ccb2855518c0419618.jpg" />
+        <itunes:owner>
+            <itunes:name>Kyle He</itunes:name>
+            <itunes:email>ohyes@hk1229.cn</itunes:email>
+        </itunes:owner>
+
+<!-- for: ${items} as ${item} -->
+<item>
+    <title>${item.title}</title>
+    <enclosure url="${item.mediaUrl}" type="${item.mimeType}" length=""/>
+    <guid>${item.mediaUrl}</guid>
+    <pubDate>${item.pubData}</pubDate>
+    <itunes:duration></itunes:duration>
+    <itunes:isClosedCaptioned>no</itunes:isClosedCaptioned>
+    <description>${item.description}</description>
+</item>
+<!-- /for -->
+
+    </channel>
+</rss>
