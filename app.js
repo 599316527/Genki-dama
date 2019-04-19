@@ -3,6 +3,7 @@ const path = require('path')
 const fs = require('fs')
 const etpl = require('etpl')
 const util = require('util')
+const url = require('url')
 const uuid = require('uuid/v4')
 const {sortBy, flatten, find, deburr, capitalize} = require('lodash')
 const pinyin = require("pinyin");
@@ -39,17 +40,12 @@ async function updatePodcastFiles() {
     return {
       id,
       title,
-      mediaUrl: getEpisodeURL(id),
       mimeType: `audio/${path.extname(file).substring(1)}`,
       pubData: (new Date(nowTimestamp + index * 1e3)).toUTCString(),
       description: title,
       file
     }
   })
-}
-
-function getEpisodeURL(id) {
-  return `http://${HOST}:${EXTERNAL_PORT || PORT}/episode/${encodeURIComponent(id)}`
 }
 
 function getPinyin(str) {
@@ -63,9 +59,11 @@ module.exports = app;
 
 app.get('/rss', async function (req, res) {
   let title = 'Local podcast feed'
+  let urlPrefix = `${req.protocol}://${req.headers.host}`
   let content = rssRender({
     title,
-    items: podcastFiles
+    items: podcastFiles,
+    urlPrefix
   })
 
   res.type('.xml').send(content)

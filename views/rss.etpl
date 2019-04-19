@@ -12,8 +12,8 @@
 <!-- for: ${items} as ${item} -->
 <item>
     <title>${item.title}</title>
-    <enclosure url="${item.mediaUrl}" type="${item.mimeType}" length=""/>
-    <guid>${item.mediaUrl}</guid>
+    <enclosure url="${urlPrefix}/episode/${item.id}" type="${item.mimeType}" length=""/>
+    <guid>${item.id}</guid>
     <pubDate>${item.pubData}</pubDate>
     <itunes:duration></itunes:duration>
     <itunes:isClosedCaptioned>no</itunes:isClosedCaptioned>
