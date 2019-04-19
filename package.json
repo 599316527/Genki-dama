@@ -7,9 +7,9 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
-    "debug": "~2.6.9",
+    "debug": "^4.1.1",
     "etpl": "^3.2.0",
-    "express": "~4.15.5",
+    "express": "^4.16.4",
     "lodash": "^4.17.11",
     "pinyin": "^2.8.3",
     "uuid": "^3.3.2"
