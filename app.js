@@ -4,7 +4,7 @@ const fse = require('fs-extra')
 const etpl = require('etpl')
 const {promisify} = require('util')
 const url = require('url')
-const mime = require('mime')
+const mime = require('mime-types')
 const uuid = require('uuid/v4')
 const {sortBy, flatten, find, deburr, capitalize, findIndex} = require('lodash')
 const pinyin = require("pinyin");
@@ -64,7 +64,7 @@ async function updatePodcastFiles() {
     return {
       id,
       title,
-      mimeType: mime.getType(path.extname(file).substring(1)),
+      mimeType: mime.lookup(path.extname(file)),
       pubData: (new Date(nowTimestamp + index * 1e3)).toUTCString(),
       description: title,
       file,
