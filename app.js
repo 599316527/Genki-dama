@@ -1,17 +1,20 @@
 const express = require('express');
 const path = require('path')
-const fs = require('fs')
+const fse = require('fs-extra')
 const etpl = require('etpl')
-const util = require('util')
+const {promisify} = require('util')
 const url = require('url')
 const uuid = require('uuid/v4')
-const {sortBy, flatten, find, deburr, capitalize} = require('lodash')
+const {sortBy, flatten, find, deburr, capitalize, findIndex} = require('lodash')
 const pinyin = require("pinyin");
 
-const rssRender = etpl.compile(fs.readFileSync(path.resolve(__dirname, 'views/rss.etpl'), 'utf8'))
+const executeP = promisify(require('child_process').exec);
+const ffmpegDurationPattern = /\bDuration:\s+(\d{2}(?::\d{2}){2})\.\d{2}\b/
+
+const rssRender = etpl.compile(fse.readFileSync(path.resolve(__dirname, 'views/rss.etpl'), 'utf8'))
 const FILE_DIR = process.env.DIR || process.env.PWD
 const {HOST, PORT, EXTERNAL_PORT} = process.env
-
+const podcastsInfoJsonFilePath = path.join(FILE_DIR, '.podcasts.json')
 const allowedFileExtensions = ['mp3', 'mp4', 'm4a']
 
 let podcastFiles = []
@@ -21,7 +24,10 @@ updatePodcastFiles().then(function () {
   console.log('Scanning dictionary fail: ', err.message)
 })
 
-fs.watch(FILE_DIR, function (eventType, filename) {
+fse.watch(FILE_DIR, function (eventType, filename) {
+  if (filename.startsWith('.')) {
+    return
+  }
   updatePodcastFiles().then(function () {
     console.log('Reload dictionary')
   }).catch(function (err) {
@@ -31,26 +37,56 @@ fs.watch(FILE_DIR, function (eventType, filename) {
 
 async function updatePodcastFiles() {
   let nowTimestamp = Date.now()
-  let files = await util.promisify(fs.readdir)(FILE_DIR)
+  let persistedPodcastFiles = (await fse.pathExists(podcastsInfoJsonFilePath))
+                                ? await fse.readJSON(podcastsInfoJsonFilePath) : []
+
+  let files = await fse.readdir(FILE_DIR)
   files = files.filter(file => allowedFileExtensions.includes(path.extname(file).substring(1)))
-  podcastFiles = files.map(function (file, index) {
+
+  podcastFiles = await Promise.all(files.map(async function (file, index) {
+    file = path.join(FILE_DIR, file)
+    let matchedFile = find(persistedPodcastFiles, function (pfile) {
+      return pfile.file === file
+    })
+    if (matchedFile) {
+      return matchedFile
+    }
+
     let id = uuid()
-    let title = file.substring(0, file.lastIndexOf('.'))
-    title = getPinyin(title) // GFW! You know it.
+    let extname = path.extname(file)
+    let title = path.basename(file)
+    title = getPinyin(path.basename(title, extname)) // GFW! You know it.
+
+    let duration = await getDuration(file)
+
     return {
       id,
       title,
       mimeType: `audio/${path.extname(file).substring(1)}`,
       pubData: (new Date(nowTimestamp + index * 1e3)).toUTCString(),
       description: title,
-      file
+      file,
+      duration,
+      extname
     }
-  })
+  }))
+
+  await fse.writeJSON(podcastsInfoJsonFilePath, podcastFiles)
 }
 
 function getPinyin(str) {
   return flatten(pinyin(str.replace(/\s+/g, '_')))
           .map(item => capitalize(deburr(item))).join('')
+}
+
+
+async function getDuration(file) {
+  let {stderr} = await executeP(`ffprobe -i "${file}"`)
+  let matched = stderr.match(ffmpegDurationPattern)
+  if (!matched) {
+    return '0'
+  }
+  return matched[1]
 }
 
 
@@ -74,6 +110,7 @@ app.get('/rss', async function (req, res) {
 app.get('/rss/episode/:uuid', function (req, res) {
   let {uuid} = req.params
   uuid = uuid.trim()
+  uuid = path.basename(uuid, path.extname(uuid))
   let {file} = find(podcastFiles, function ({id}) {
     return id === uuid
   }) || {}
@@ -81,7 +118,7 @@ app.get('/rss/episode/:uuid', function (req, res) {
     res.sendStatus(404)
     return
   }
-  res.sendFile(path.join(FILE_DIR, file))
+  res.sendFile(file)
 })
 
 // catch 404 and forward to error handler

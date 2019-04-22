@@ -13,5 +13,5 @@ POST=8000 DIR=__AUDIO_FILES_PATH__ node bin/www
 
 ## TODO
 
-[ ] Persist uuid mapping
-[ ] Random podcast title to prevent from being searched in Pocketcast
+- [x] Persist uuid mapping
+- [ ] Random podcast title to prevent from being searched in Pocketcast
