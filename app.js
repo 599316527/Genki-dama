@@ -57,6 +57,8 @@ function getPinyin(str) {
 const app = express();
 module.exports = app;
 
+app.set('trust proxy', true)
+
 app.get('/rss', async function (req, res) {
   let title = 'Local podcast feed'
   let urlPrefix = `${req.protocol}://${req.headers.host}`
@@ -69,12 +71,16 @@ app.get('/rss', async function (req, res) {
   res.type('.xml').send(content)
 })
 
-app.get('/episode/:uuid', function (req, res) {
+app.get('/rss/episode/:uuid', function (req, res) {
   let {uuid} = req.params
   uuid = uuid.trim()
   let {file} = find(podcastFiles, function ({id}) {
     return id === uuid
-  })
+  }) || {}
+  if (!file) {
+    res.sendStatus(404)
+    return
+  }
   res.sendFile(path.join(FILE_DIR, file))
 })
 
